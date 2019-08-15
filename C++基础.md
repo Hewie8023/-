@@ -1,4 +1,4 @@
-### 介绍下C++的类继承？，，，动态多态的实现，，；。C++多态是怎么体现的，派生类的内存分布，多重继承的虚函数表有几个； 。。C++继承方式，4种，包含虚继承，追问，protected和public继承区别，.B C虚继承A，D public继承 B C ，有A *a = new D，a->fun(),fun是虚函数，并且B C都重写了，怎么保证a调用的是B重写的虚函数。深度解析虚函数表。虚函数是干嘛的作用？；5、，13、继承、虚继承14、钻石继承问题15、同名覆盖问题16、虚函数表17、虚指针18、虚函数、纯虚函数19、接口20、函数重载24、class A :class B{},A是私有继承还是？ 私有继承是做什么用的？菱形继承的虚函数的开销说一下，Operator char（）什么 意思，class怎么防止继承，只讲了私有构造，忘了final关键字；。虚函数如何实现的，
+### 介绍下C++的类继承？，，，动态多态的实现，，；。C++多态是怎么体现的，派生类的内存分布，多重继承的虚函数表有几个； 。。C++继承方式，4种，包含虚继承，追问，protected和public继承区别，.B C虚继承A，D public继承 B C ，有A *a = new D，a->fun(),fun是虚函数，并且B C都重写了，怎么保证a调用的是B重写的虚函数。深度解析虚函数表。虚函数是干嘛的作用？；5、，13、继承、虚继承14、钻石继承问题15、同名覆盖问题16、虚函数表17、虚指针18、虚函数、纯虚函数19、接口20、函数重载24、class A :class B{},A是私有继承还是？ 私有继承是做什么用的？菱形继承的虚函数的开销说一下，，class怎么防止继承，只讲了私有构造，忘了final关键字；。虚函数如何实现的，
 
 ## 面向对象
 三大特性：封装,继承,多态  
@@ -233,20 +233,17 @@ Copy constructor called
 ###### 浅拷贝
  所谓浅拷贝，指的是在对象复制时，只对对象中的数据成员进行简单的赋值，默认拷贝构造函数执行的也是浅拷贝。大多情况下“浅拷贝”已经能很好地工作了，但是一旦对象存在了动态成员，那么浅拷贝就会出问题了，让我们考虑如下一段代码：
  ```c++
-#include<iostream>
-#include<assert.h>
-using namespace std;
 class Rect
 {
 public:
     Rect()
     {
-     p=new int(100);
+        p=new int(100);
     }
    
     ~Rect()
     {
-     assert(p!=NULL);
+        assert(p!=NULL);
         delete p;
     }
 private:
@@ -263,17 +260,14 @@ int main()
  ```
  在这段代码运行结束之前，会出现一个运行错误。原因就在于在进行对象复制时，对于动态分配的内容没有进行正确的操作。我们来分析一下：
  在运行定义rect1对象后，由于在构造函数中有一个动态分配的语句，因此执行后的内存情况大致如下：
- ![]()
+ ![](https://raw.githubusercontent.com/Hewie8023/zhengli/master/image/c%2B%2B/qiankaobei01.jpg)
   在使用rect1复制rect2时，由于执行的是浅拷贝，只是将成员的值进行赋值，这时 rect1.p = rect2.p，也即这两个指针指向了堆里的同一个空间，如下图所示：
-  ![]()
+  ![](https://raw.githubusercontent.com/Hewie8023/zhengli/master/image/c%2B%2B/qiankaobei02.jpg)
   当然，这不是我们所期望的结果，在销毁对象时，两个对象的析构函数将对同一个内存空间释放两次，这就是错误出现的原因。我们需要的不是两个p有相同的值，而是两个p指向的空间有相同的值，解决办法就是使用“深拷贝”。
 
   ###### 深拷贝
   在“深拷贝”的情况下，对于对象中动态成员，就不能仅仅简单地赋值了，而应该重新动态分配空间，如上面的例子就应该按照如下的方式进行处理：
   ```c++
-#include<iostream>
-#include<assert.h>
-using namespace std;
 class Rect
 {
 public:
@@ -284,9 +278,9 @@ public:
     
     Rect(const Rect& r)
     {
-     width=r.width;
+        width=r.width;
         height=r.height;
-     p=new int(100);
+        p=new int(100);
         *p=*(r.p);
     }
      
@@ -308,7 +302,7 @@ int main()
 }
   ```
 此时，在完成对象的复制后，内存的一个大致情况如下：
-![]()
+![](https://raw.githubusercontent.com/Hewie8023/zhengli/master/image/c%2B%2B/shenkaobei.jpg)
 此时rect1的p和rect2的p各自指向一段内存空间，但它们指向的空间具有相同的内容，这就是所谓的“深拷贝”。
 
 简而言之，当数据成员中有**指针**时，必须要用深拷贝。
@@ -343,6 +337,289 @@ int main()
 　　如果A的析构函数是non-vartual，则只会调用A的析构函数，这样B的资源没有释放，就会有内存泄露；
 
 　　如果A的析构函数是vartual，则只会先调用A的析构函数，再调用B的析构函数。
+
+## 多态和虚函数
+### 虚函数
+只需要在函数声明前面增加 virtual 关键字。虚函数是多态性的基础，其调用的方式是动态联编（程序运行时才决定调用基类的还是子类）。
+虚函数的作用是允许在派生类中重新定义与基类同名的函数，并且可以通过基类指针或引用来访问基类和派生类中的同名函数，达到多态的目的。
+
+#### 为什么有的类的析构函数需要定义成虚函数
+C++中基类采用virtual虚析构函数是为了防止内存泄漏。具体地说，如果派生类中申请了内存空间，并在其析构函数中对这些内存空间进行释放。假设基类中采用的是非虚析构函数，当删除基类指针指向的派生类对象时就不会触发动态绑定，因而只会调用基类的析构函数，而不会调用派生类的析构函数。那么在这种情况下，派生类中申请的空间就得不到释放从而产生内存泄漏。所以，为了防止这种情况的发生，C++中基类的析构函数应采用virtual虚析构函数。
+
+### 纯虚函数
+纯虚函数是在基类中声明的虚函数，它在基类中没有定义，但要求任何派生类都要定义自己的实现方法。在基类中实现纯虚函数的方法是在函数原型后加 =0:
+**引入原因**
+1、为了方便使用多态特性，我们常常需要在基类中定义虚拟函数。
+2、在很多情况下，基类本身生成对象是不合情理的。例如，动物作为一个基类可以派生出老虎、孔雀等子类，但动物本身生成对象明显不合常理。
+
+抽象类的作用是作为一个类族的共同基类，或者说，为一个类族提供一个公共接口。
+
+### 虚函数表
+每一个包含了虚函数的类都有一个虚表。
+1. 对于一个class，产生一堆指向virtual functions的指针，这些指针被统一放在一个表格中。这个表格被称为虚函数表，英文又称做virtual table（vtbl）。
+2. 每一个对象中都添加一个指针，指向相关的virtual table。通常这个指针被称作虚函数表指针（vptr）。出于效率的考虑，该指针通常放在对象实例最前面的位置（第一个slot处）。每一个class所关联的type_info信息也由virtual table指出（通常放在表格的最前面）。
+
+类A包含虚函数vfunc1，vfunc2，由于类A包含虚函数，故类A拥有一个虚表。
+```c++
+class A {
+public:
+    virtual void vfunc1();
+    virtual void vfunc2();
+    void func1();
+    void func2();
+private:
+    int m_data1, m_data2;
+};
+```
+![]()
+虚表是一个指针数组，其元素是虚函数的指针，每个元素对应一个虚函数的函数指针。需要指出的是，普通的函数即非虚函数，其调用并不需要经过虚表，所以虚表的元素并不包括普通函数的函数指针。 
+虚表内的条目，即虚函数指针的赋值发生在编译器的编译阶段，也就是说在代码的编译阶段，虚表就可以构造出来了。
+
+#### 虚表指针
+虚表是属于类的，而不是属于某个具体的对象，一个类只需要一个虚表即可。同一个类的所有对象都使用同一个虚表。 
+为了指定对象的虚表，对象内部包含一个虚表的指针，来指向自己所使用的虚表。为了让每个包含虚表的类的对象都拥有一个虚表指针，编译器在类中添加了一个指针，*__vptr，用来指向虚表。这样，当类的对象在创建时便拥有了这个指针，且这个指针的值会自动被设置为指向类的虚表。
+![]()
+
+#### 动态绑定
+如何利用虚表和虚表指针来实现动态绑定：
+```c++
+class A {
+public:
+    virtual void vfunc1();
+    virtual void vfunc2();
+    void func1();
+    void func2();
+private:
+    int m_data1, m_data2;
+};
+
+class B : public A {
+public:
+    virtual void vfunc1();
+    void func1();
+private:
+    int m_data3;
+};
+
+class C: public B {
+public:
+    virtual void vfunc2();
+    void func2();
+private:
+    int m_data1, m_data4;
+};
+```
+类A是基类，类B继承类A，类C又继承类B。类A，类B，类C，其对象模型如下图所示。
+![]()
+由于这三个类都有虚函数，故编译器为每个类都创建了一个虚表，即类A的虚表（A vtbl），类B的虚表（B vtbl），类C的虚表（C vtbl）。类A，类B，类C的对象都拥有一个虚表指针，*__vptr，用来指向自己所属类的虚表。 
+类A包括两个虚函数，故A vtbl包含两个指针，分别指向A::vfunc1()和A::vfunc2()。 
+类B继承于类A，故类B可以调用类A的函数，但由于类B重写了B::vfunc1()函数，故B vtbl的两个指针分别指向B::vfunc1()和A::vfunc2()。 
+类C继承于类B，故类C可以调用类B的函数，但由于类C重写了C::vfunc2()函数，故C vtbl的两个指针分别指向B::vfunc1()（指向继承的最近的一个类的函数）和C::vfunc2()。 
+
+假设我们定义一个类B的对象。由于bObject是类B的一个对象，故bObject包含一个虚表指针，指向类B的虚表。
+```c++
+int main() 
+{
+    B bObject;
+}
+```
+我们声明一个类A的指针p来指向对象bObject。虽然p是基类的指针只能指向基类的部分，但是虚表指针亦属于基类部分，所以p可以访问到对象bObject的虚表指针。bObject的虚表指针指向类B的虚表，所以p可以访问到B vtbl。
+```c++
+int main() 
+{
+    B bObject;
+    A *p = & bObject;
+}
+```
+当我们使用p来调用vfunc1()函数时，会发生什么现象？
+```c++
+int main() 
+{
+    B bObject;
+    A *p = & bObject;
+    p->vfunc1();
+}
+```
+程序在执行p->vfunc1()时，会发现p是个指针，且调用的函数是虚函数，接下来便会进行以下的步骤。 
+首先，根据虚表指针p->__vptr来访问对象bObject对应的虚表。虽然指针p是基类A*类型，但是*__vptr也是基类的一部分，所以可以通过p->__vptr可以访问到对象对应的虚表。 
+然后，在虚表中查找所调用的函数对应的条目。由于虚表在编译阶段就可以构造出来了，所以可以根据所调用的函数定位到虚表中的对应条目。对于 p->vfunc1()的调用，B vtbl的第一项即是vfunc1对应的条目。 
+最后，根据虚表中找到的函数指针，调用函数。从图中可以看到，B vtbl的第一项指向B::vfunc1()，所以 p->vfunc1()实质会调用B::vfunc1()函数。
+如果p指向类A的对象，情况又是怎么样？
+```c++
+int main() 
+{
+    A aObject;
+    A *p = &aObject;
+    p->vfunc1();
+}
+```
+当aObject在创建时，它的虚表指针__vptr已设置为指向A vtbl，这样p->__vptr就指向A vtbl。vfunc1在A vtbl对应在条目指向了A::vfunc1()函数，所以 p->vfunc1()实质会调用A::vfunc1()函数。
+
+#### 单继承情况
+##### 单继承情况且本身不存在虚函数
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2;
+    virtual void base1_fun1() {}
+    virtual void base1_fun2() {}
+};
+ 
+class Derive1 : public Base1
+{
+public:
+    int derive1_1;
+    int derive1_2;
+};
+```
+现在类的布局情况应该是下面这样:
+![]()
+
+##### 单继承覆盖基类的虚函数
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2;
+    virtual void base1_fun1() {}
+    virtual void base1_fun2() {}
+};
+ 
+class Derive1 : public Base1
+{
+public:
+    int derive1_1;
+    int derive1_2;
+    // 覆盖基类函数
+    virtual void base1_fun1() {}
+};
+```
+Derive1类 重写了Base1类的base1_fun1()函数, 也就是常说的虚函数覆盖。无论是通过Derive1的指针还是Base1的指针来调用此方法, 调用的都将是被继承类重写后的那个方法(函数), 这时就产生了多态。
+那么新的布局图:
+![]()
+
+##### 单继承同时新定义了基类没有的虚函数
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2; 
+    virtual void base1_fun1() {}
+    virtual void base1_fun2() {}
+};
+ 
+class Derive1 : public Base1
+{
+public:
+    int derive1_1;
+    int derive1_2;
+    virtual void derive1_fun1() {}
+};
+```
+继承类Derive1的虚函数表被加在基类的后面。
+由于Base1只知道自己的两个虚函数索引[0][1], 所以就算在后面加上了[2], Base1根本不知情, 不会对她造成任何影响。
+![]()
+
+##### 多继承且存在虚函数覆盖又存在自身定义的虚函数的类对象布局
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2;
+    virtual void base1_fun1() {}
+    virtual void base1_fun2() {}
+};
+class Base2
+{
+public:
+    int base2_1;
+    int base2_2;
+    virtual void base2_fun1() {}
+    virtual void base2_fun2() {}
+};
+// 多继承
+class Derive1 : public Base1, public Base2
+{
+public:
+    int derive1_1;
+    int derive1_2;
+    // 基类虚函数覆盖
+    virtual void base1_fun1() {}
+    virtual void base2_fun2() {}
+    // 自身定义的虚函数
+    virtual void derive1_fun1() {}
+    virtual void derive1_fun2() {}
+};
+```
+Derive1的虚函数表依然是保存到第1个拥有虚函数表的那个基类的后面的.
+看看现在的类对象布局图:
+![]()
+##### 如果第1个直接基类没有虚函数
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2;
+};
+class Base2
+{
+public:
+    int base2_1;
+    int base2_2;
+    virtual void base2_fun1() {}
+    virtual void base2_fun2() {}
+}; 
+// 多继承
+class Derive1 : public Base1, public Base2
+{
+public:
+    int derive1_1;
+    int derive1_2;
+    // 自身定义的虚函数
+    virtual void derive1_fun1() {}
+    virtual void derive1_fun2() {}
+};
+```
+谁有虚函数表, 谁就放在前面!
+![]()
+
+##### What if 两个基类都没有虚函数表
+```c++
+class Base1
+{
+public:
+    int base1_1;
+    int base1_2;
+};
+class Base2
+{
+public:
+    int base2_1;
+    int base2_2;
+};
+// 多继承
+class Derive1 : public Base1, public Base2
+{
+public:
+    int derive1_1;
+    int derive1_2; 
+    // 自身定义的虚函数
+    virtual void derive1_fun1() {}
+    virtual void derive1_fun2() {}
+};
+```
+
+
+
+
+
+
 
 ## 面试题
 ### 一个空类编译器会自动生成哪些函数？ 哪些需要禁止？
@@ -554,7 +831,7 @@ c/c++的指针是指向逻辑地址。
 1. 模板编译时，以每个cpp文件为编译单位，实例化该文件中的函数模板和类模板 
 2. 链接器在链接每个目标文件时，会检测是否存在相同的实例；有存在相同的实例版本，则删除一个重复的实例，保证模板实例化没有重复存在。 
 比如我们有一个程序，包含A.cpp和B.cpp，它们都调用了CThree模板类，在A文件中定义了int和double型的模板类，在B文件中定义了int和float型的模板类；在编译器编译时.cpp文件为编译基础，生成A.obj和B.obj目标文件，即使A.obj和B.obj存在重复的实例版本，但是在链接时，链接器会把所有冗余的模板实例代码删除，保证exe中的实例都是唯一的。编译原理和链接原理，如下所示：
-![]()
+![](https://raw.githubusercontent.com/Hewie8023/zhengli/master/image/c%2B%2B/bianyi.jpg)
 
 
 #### 实例化
@@ -584,7 +861,424 @@ c/c++的指针是指向逻辑地址。
 偏特化的标志：
 template\<typename T,...\>还剩点东西，不像全特化那么彻底。
 
-### 运算符重载。，赋值运算符重载，取地址操作符重载，被const修饰的取地址操作符重载，
+### 运算符重载
+重载的运算符是带有特殊名称的函数，函数名是由关键字 operator 和其后要重载的运算符符号构成的。与其他函数一样，重载运算符有一个返回类型和一个参数列表。
+```c++
+Box operator+(const Box&);
+```
+声明加法运算符用于把两个 Box 对象相加，返回最终的 Box 对象。大多数的重载运算符可被定义为普通的非成员函数或者被定义为类成员函数。如果我们定义上面的函数为类的非成员函数，那么我们需要为每次操作传递两个参数，如下所示：
+```c++
+Box operator+(const Box&, const Box&);
+```
+例子：
+```c++
+#include <iostream>
+using namespace std;
+class complex{
+public:
+    complex();
+    complex(double real, double imag);
+public:
+    //声明运算符重载
+    complex operator+(const complex &A) const;
+    void display() const;
+private:
+    double m_real;  //实部
+    double m_imag;  //虚部
+};
+complex::complex(): m_real(0.0), m_imag(0.0){ }
+complex::complex(double real, double imag): m_real(real), m_imag(imag){ }
+//实现运算符重载
+complex complex::operator+(const complex &A) const{
+    complex B;
+    B.m_real = this->m_real + A.m_real;
+    B.m_imag = this->m_imag + A.m_imag;
+    return B;
+}
+void complex::display() const{
+    cout<<m_real<<" + "<<m_imag<<"i"<<endl;
+}
+int main(){
+    complex c1(4.3, 5.8);
+    complex c2(2.4, 3.7);
+    complex c3;
+    c3 = c1 + c2;
+    c3.display();
+    return 0;
+}
+```
+我们在 complex 类中重载了运算符+，该重载只对 complex 对象有效。当执行c3 = c1 + c2;语句时，编译器检测到+号左边（+号具有左结合性，所以先检测左边）是一个 complex 对象，就会调用成员函数operator+()，也就是转换为下面的形式：
+```c++
+c3 = c1.operator+(c2);
+```
+c1 是要调用函数的对象，c2 是函数的实参。
+**运算符重载函数不仅可以作为类的成员函数**，还可以作为全局函数。更改上面的代码，在全局范围内重载+，实现复数的加法运算：
+```c++
+#include <iostream>
+using namespace std;
+class complex{
+public:
+    complex();
+    complex(double real, double imag);
+public:
+    void display() const;
+    //声明为友元函数
+    friend complex operator+(const complex &A, const complex &B);
+private:
+    double m_real;
+    double m_imag;
+};
+complex operator+(const complex &A, const complex &B);
+complex::complex(): m_real(0.0), m_imag(0.0){ }
+complex::complex(double real, double imag): m_real(real), m_imag(imag){ }
+void complex::display() const{
+    cout<<m_real<<" + "<<m_imag<<"i"<<endl;
+}
+//在全局范围内重载+
+complex operator+(const complex &A, const complex &B){
+    complex C;
+    C.m_real = A.m_real + B.m_real;
+    C.m_imag = A.m_imag + B.m_imag;
+    return C;
+}
+int main(){
+    complex c1(4.3, 5.8);
+    complex c2(2.4, 3.7);
+    complex c3;
+    c3 = c1 + c2;
+    c3.display();
+    return 0;
+}
+```
+运算符重载函数不是 complex 类的成员函数，但是却用到了 complex 类的 private 成员变量，所以必须在 complex 类中将该函数声明为友元函数。
+当执行c3 = c1 + c2;语句时，编译器检测到+号两边都是 complex 对象，就会转换为类似下面的函数调用：
+```c++
+c3 = operator+(c1, c2);
+```
+#### 运算符重载规则
+1. 不是所有的运算符都可以重载。长度运算符sizeof、条件运算符: ?、成员选择符.和域解析运算符::不能被重载。
+2. 重载不能改变运算符的优先级和结合性。
+3. 重载不会改变运算符的用法。
+4. 运算符重载函数不能有默认的参数，否则就改变了运算符操作数的个数。
+5. 运算符函数既可以作为类的成员函数，也可以作为全局函数。
+6. 箭头运算符->、下标运算符[ ]、函数调用运算符( )、赋值运算符=只能以成员函数的形式重载。
+
+
+#### 到底以成员函数还是全局函数（友元函数）的形式重载运算符
+（1）一般而言，对于双目运算符，最好将其重载为友元函数；而对于单目运算符，则最好重载为成员函数。
+但是也存在例外情况。有些双目运算符是不能重载为友元函数的，比如赋值运算符=、函数调用运算符()、下标运算符[]、指针运算符->等，因为这些运算符在语义上与this都有太多的关联。比如=表示“将自身赋值为…”，[]表示“自己的第几个元素”，如果将其重载为友元函数，则会出现语义上的不一致。
+
+2）还有一个需要特别说明的就是输出运算符<<。因为<<的第一个操作数一定是ostream类型，所以<<只能重载为友元函数，如下：
+```c++
+friend ostream& operator <<(ostream& os, const Complex& c);
+ostream& operator <<(ostream& os, const Complex& c)
+{
+    os << c.m_Real << “+” << c.m_Imag << “i” << endl;
+    return os;
+}
+```
+（3）所以，对于 =、[]、()、->以及所有的类型转换运算符只能作为非静态成员函数重载。如果允许第一操作数不是同类对象，而是其他数据类型，则只能作为非成员函数重载（如输入输出流运算符>>和<<就是这样的情况）。
+
+#### 重载[]（下标运算符）
+下标运算符[ ]必须以成员函数的形式进行重载。该重载函数在类中的声明格式如下：
+```c++
+返回值类型 & operator[ ] (参数);
+```
+或者：
+```c++
+const 返回值类型 & operator[ ] (参数) const;
+```
+使用第一种声明方式，[ ]不仅可以访问元素，还可以修改元素。使用第二种声明方式，[ ]只能访问而不能修改元素。在实际开发中，我们应该同时提供以上两种形式，这样做是为了适应 const 对象，因为通过 const 对象只能调用 const 成员函数，如果不提供第二种形式，那么将无法访问 const 对象的任何元素。
+```c++
+#include <iostream>
+using namespace std;
+class Array{
+public:
+    Array(int length = 0);
+    ~Array();
+public:
+    int & operator[](int i);
+    const int & operator[](int i) const;
+public:
+    int length() const { return m_length; }
+    void display() const;
+private:
+    int m_length;  //数组长度
+    int *m_p;  //指向数组内存的指针
+};
+Array::Array(int length): m_length(length){
+    if(length == 0){
+        m_p = NULL;
+    }else{
+        m_p = new int[length];
+    }
+}
+Array::~Array(){
+    delete[] m_p;
+}
+int& Array::operator[](int i){
+    return m_p[i];
+}
+const int & Array::operator[](int i) const{
+    return m_p[i];
+}
+void Array::display() const{
+    for(int i = 0; i < m_length; i++){
+        if(i == m_length - 1){
+            cout<<m_p[i]<<endl;
+        }else{
+            cout<<m_p[i]<<", ";
+        }
+    }
+}
+int main(){
+    int n;
+    cin>>n;
+    Array A(n);
+    for(int i = 0, len = A.length(); i < len; i++){
+        A[i] = i * 5;
+    }
+    A.display();
+   
+    const Array B(n);
+    cout<<B[n-1]<<endl;  //访问最后一个元素
+   
+    return 0;
+}
+```
+重载[ ]运算符以后，表达式arr[i]会被转换为：
+```c++
+arr.operator[ ](i);
+```
+需要说明的是，B 是 const 对象，如果 Array 类没有提供 const 版本的operator[ ]，那么倒数第二行代码将报错。虽然这行代码只是读取对象的数据，并没有试图修改对象，但是它调用了非 const 版本的operator[ ]，编译器不管实际上有没有修改对象，只要是调用了非 const 的成员函数，编译器就认为会修改对象（至少有这种风险）。
+
+
+
+
+#### 赋值运算符重载
+
+```c++
+#include <iostream>
+#include <string>
+using namespace std;
+
+class MyStr {
+public:
+    MyStr() {}
+    MyStr(int _id, char *_name)
+    {
+        cout << "constructor" << endl;
+        id = _id;
+        name = new char[strlen(_name) + 1];
+        strcpy_s(name,strlen(_name) + 1,_name); 
+    }
+    MyStr(const MyStr &str)
+    {
+        cout << "copy constructor" << endl;
+        id = str.id;
+        if (name != NULL)
+            delete name;
+        name = new char[strlen(str.name) + 1];
+        strcpy_s(name,strlen(str.name) + 1,str.name);
+    }
+
+    MyStr& operator=(const MyStr& str)
+    {
+        cout << "operator=" << endl;
+        if (this != &str)
+        {
+            if (name != NULL)
+                delete name;
+            this->id = str.id;
+            name = new char[strlen(str.name) + 1];
+            strcpy_s(name,strlen(str.name) + 1,str.name);
+
+            return *this;
+        }
+    }
+    ~MyStr() 
+    {
+        cout << "deconstructor" << endl;
+        delete name;
+    }
+private:
+    char *name;
+    int id;
+};
+
+void main()
+{
+    MyStr str1(1,"Jack");
+    MyStr str2;
+    str2 = str1;
+    MyStr str3 = str2;
+    return;
+
+}
+```
+如果将上述例子显示提供的拷贝函数注释掉，然后同样执行MyStr str3 = str2;语句，此时调用默认的拷贝构造函数，它们指向内存中的同一区域。 
+这样会有两个致命错误： 
+1）str2修改name时，str3的name也会被修改； 
+2）当执行str2和str3的析构函数时，会导致同一内存区域释放两次，程序崩溃。
+所以，必须通过显示提供拷贝构造函数以避免这样的问题，如上述例子，先判断被拷贝者的name是否为空，若否，delete name，然后为name重新申请空间，再将拷贝者name中的数据拷贝到被拷贝者的name中，这样，str2.name和str3.name各自独立，避免了上面两个错误。赋值运算符重载函数也是同样的道理。
+
+**赋值运算符重载函数只能是类的非静态的成员函数**
+1、因为静态成员函数只能操作类的静态成员，无法操作类的非静态成员，可以参考静态成员变量和静态成员函数在C++类中的作用来进行理解； 
+2、避免二义性 
+当程序没有显示提供一个以本类或者本类的引用为参数的赋值运算符重载函数时，编译器会自动提供一个。现在假设C++允许友元函数定义的赋值运算符重载函数，而且以引用为参数，与此同时，编译器也提供一个默认的赋值运算符重载函数（由于友元函数不属于这个类，所以此时编译器会自动提供一个）。但是当再执行类似str2 = str1;这样的代码时，编译器就困惑了。 
+为了避免这样的二义性，C++强制规定，赋值运算符重载函数只能定义为类的成员函数，这样编译器就能判断是否需要提供默认版本了。
+
+#### 取地址及const取地址操作符重载
+取地址是什么意思呢？就是返回当前对象的地址，对于成员函数来讲，this指针就是它的地址，需要返回指针。
+''&'' 运算符是一个单目运算符，其只有一个参数，而这个参数就是一个对象，所以说这个对象是不用传的，定义为成员函数时函数参数就应该少一个，第一个函数参数就被this指针所代替。所以，在此不需要进行传参。
+
+const成员函数及const对象去调用，普通的成员函数普通的对象来进行调用，若没有普通成员函数，那么普通对象也能够调用const成员函数。
+```c++
+class Date {
+public:
+	Date(int year, int month, int day) {
+		_year = year;
+		_month = month;
+		_day = day;
+	}
+	Date(const Date& d) {
+		_year = d._year;
+	}
+	Date* operator&() {
+		cout << "Date* operator&()" << endl;
+		return this;
+	}
+ 
+	const Date* operator&() const {
+		cout << "const Date* operator&() const" << endl;
+		return this;
+	}
+ 
+private:
+	int _year;
+	int _month;
+	int _day;
+};
+ 
+int main() {
+	Date d1(2019, 4, 1);
+	const Date d2(2019, 3, 31);
+ 
+	Date* pa1 = &d1;
+	const Date* pd2 = &d2;
+	system("pause");
+	return 0;
+}
+```
+如果不写这两个函数的时候，编译器会帮助默认生成，若无其它操作完全够用了，因为这两个函数只返回this指针，也没有其他的操作。除非，你想返回别的地址，可以做到''返回你想返回的地址''，比如，返回一个病毒的地址，返回一个很深的调用链等等，可以自己按照需求进行重载实现，否则不必实现也无影响。
+
+
+
+#### Operator char()什么意思
+operator用于类型转换函数：
+类型转换函数的特征：
+
+1. 型转换函数定义在源类中；
+2. 须由 operator 修饰，函数名称是目标类型名或目标类名；
+3. 函数没有参数，没有返回值，但是有return 语句，在return语句中返回目标类型数据或调用目标类的构造函数。
+类型转换函数主要有两类：
+
+**1） 对象向基本数据类型转换：**
+```c++
+
+class D {
+  public:
+     D(double d) : d_(d) {}
+ 
+     /* “(int)D”类型转换:将类型D转换成int */
+     operator int() const {
+         std::cout << "(int)d called!" << std::endl;
+         return static_cast<int>(d_);
+     }
+ 
+  private:
+     double d_;
+ };
+ 
+ int add(int a, int b) {
+     return a + b;
+ }
+ 
+  int main() {
+     D d1 = 1.1;
+     D d2 = 2.2;
+     std::cout << add(d1, d2) << std::endl;
+     return 0;
+ }
+```
+执行add(d1,d2)函数时“(int)D”类型转换函数将被自动调用，程序运行的输出为：
+(int)d called!
+(int)d called!
+3
+**2）对象向不同类的对象的转换：**
+```c++
+class A
+{
+  public:
+     A(int num = 0) : dat(num) {}
+     
+     /* "(int)a"类型转换 */
+     operator int() { return dat; }
+ 
+  private:
+     int dat;
+};
+ 
+ 
+class X
+{
+  public:
+     X(int num = 0) : dat(num) {}
+ 
+     /* "(int)a"类型转换 */
+     operator int() { return dat; }
+ 
+     /* "(A)a"类型转换 */
+     operator A() {
+         A temp = dat;
+         return temp;
+     }
+ 
+  private:
+     int dat;
+};
+ 
+ 
+int main()
+{
+     X stuff = 37;
+     A more = 0;
+     int hold;
+ 
+     hold = stuff;    // convert X::stuff to int
+     std::cout << hold << std::endl;
+ 
+     more = stuff;    // convert X::stuff to A::more
+     std::cout << more << std::endl;        // convert A::more to int
+ 
+     return 0;
+}
+```
+上面这个程序中X类通过“operator A()”类型转换来实现将X类型对象转换成A类型，这种方式需要先创建一个临时A对象再用它去赋值目标对象；更好的方式是为A类增加一个构造函数：
+```c++
+A(const X& rhs) : dat(rhs) {}
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### 定位内存泄露
